@@ -1,78 +1,118 @@
-# 🎮 2048 Puzzle AI Player
-## Introduction
-The 2048 Puzzle AI Player is an intelligent agent designed to play the 2048 puzzle efficiently, utilizing advanced AI techniques like Expectiminimax and heuristics to achieve high scores. This ReadMe provides an overview of the project, including its purpose, algorithmic approach, and usage instructions
+# 🧠 2048 AI Agent with Enhanced GUI and Simulation Toolkit
 
-![](https://i.imgur.com/InwVwFK.png)
+> 🔗 **Base Source**: This project is built upon the base Python AI logic cloned from  
+> [https://github.com/gksdusql94/AI_2048](https://github.com/gksdusql94/AI_2048)
 
-![](https://i.imgur.com/FxkLPRi.png)
+---
 
+## 📈 Overview
 
-## 🧠 Algorithmic                 
-### Minimax Algorithm
-The AI player employs the minimax algorithm, which is used in adversarial search scenarios to minimize potential losses assuming optimal opponent behavior.
+This project extends the base implementation of a Minimax/Expectiminimax-based AI agent that plays the 2048 game. The AI evaluates possible moves using heuristics and depth-limited search, and the game logic is governed by a grid-based representation of the 2048 board.
 
-```python
-def getMove(self, grid):
-    best_value = maxsize * -1
-    for move in grid.getAvailableMoves():
-        temp_grid = grid.clone()
-        temp_grid.move(move)
-        value = self.min(Node(move=move, grid=temp_grid, depth=DEPTH-1))
-        if value > best_value:
-            best_move = move
+Significant features and tooling upgrades have been implemented to support interactive visualization, simulation control, dynamic heuristic configuration, and detailed logging of results for performance analysis.
+
+---
+
+## 🧠 AI: Expectiminimax Agent
+
+The core AI agent uses the **Expectiminimax search algorithm**, a variant of the classic Minimax algorithm used for stochastic games. The agent alternates between:
+
+- **Maximizing Player Moves** – Choosing the best direction (UP/DOWN/LEFT/RIGHT)
+- **Minimizing Computer Moves** – Random tile placement of 2 or 4
+- **Chance Nodes** – Weighted evaluation of random outcomes (90% chance of 2, 10% of 4)
+
+### 🔧 Heuristics Used
+
+Each game state is evaluated using a weighted sum of:
+- Grid smoothness (penalizes tile gaps)
+- Tile monotonicity
+- Available moves
+- Open cells
+- Grid value map (prefers higher tiles in corners)
+
+Weights are adjustable in real-time.
+
+---
+
+## 🚀 Features & Enhancements Beyond the Base Project
+
+### 🗁️ Graphical User Interface (GUI)
+- Real-time tile updates using `tkinter`
+- Interactive grid display for each move
+- Color-coded tiles consistent with 2048 style
+
+### 🎛️ Dynamic Simulation Controls
+- **Speed Slider**: Adjustable move delay from 1ms to 2000ms
+- **Increment/Decrement Buttons**: Fine-tune move speed with “MIN”/“MAX” indicators
+- **Pause/Resume**: Toggle simulation at any time
+- **Single or Full Simulation Modes**: Run one game or hundreds of them in a batch
+
+### 📊 Heuristic Configuration
+- View and **edit AI heuristic weights**
+- Apply changes dynamically:
+  - Yellow ⚪ `Waiting`: Will be used in next game
+  - Green 🟢 `Applied`: Now in use
+- Locked during active game to prevent inconsistency
+
+### 📁 Automated Logging
+- Every game’s result is saved to a timestamped CSV file
+- Logs include:
+  - Game number
+  - Max tile reached
+  - Heuristic weights used
+  - Time taken per game
+- Logs are saved to:
+  - `SingleSimulationResults/` for one-off runs
+  - `FullSimulationResults/` for batch runs
+
+### 🧪 Game Count Tracking
+- Live counter for games completed in a simulation
+- Resets to `0` with each new run
+
+---
+
+## 📂 Project Structure
+
+```
+.
+├── BaseAI_3.py
+├── ComputerAI_3.py
+├── FullSimulationResults/
+├── Grid_3.py
+├── PlayerAI_3.py
+├── README.md
+├── SingleSimulationResults/
+├── simulation_tracker_gui.py
 ```
 
+---
 
-### Alpha-Beta Pruning
-To improve the efficiency of the minimax algorithm, the AI player utilizes alpha-beta pruning. Alpha-beta pruning reduces the number of nodes evaluated in the search tree by eliminating branches that are guaranteed to be irrelevant to the final decision.
+## 🛠️ Setup & Run
 
-```python
-def min(self, node, alpha, beta):
-    for child in children:
-        value = self.max(child, alpha, beta)
-        if value < beta:
-            beta = value
-        if alpha >= beta:
-            break
-    return beta
+### ✅ Requirements
+
+- Python 3.7+
+- `tkinter` (usually included with Python)
+- `pandas` and `matplotlib` (optional for further analysis)
+
+### ▶️ To Run the GUI:
+
+```bash
+python simulation_tracker_gui.py
 ```
 
-### Heuristic Functions
-Custom heuristics guide the AI by evaluating the desirability of game states. This includes factors like:
+---
 
-- The number of empty cells.
-- Monotonicity of the tile arrangement.
-- Whether the highest tile is in a corner
+## 🧹 Future Improvements (Ideas)
+- Add bar graphs of performance over time
+- Save/load weight configurations
+- Multiplayer or custom grid sizes
+- Integration with ML models (e.g., reinforcement learning)
 
-```python
-def evaluate(grid):
-    number_of_blank_tiles = len(grid.getAvailableCells())
-    max_tile = grid.getMaxTile()
-    bonus = 10 if max_tile in [grid.map[0][0], grid.map[0][3]] else 0
-    return number_of_blank_tiles + bonus
-```
+---
 
-## 🚀 Instrutions
-Run the game
+## 🤝 Credits
 
-```python
-python GameManager.py
-```
-## 📂 Files Overview
+- Original logic: [https://github.com/gksdusql94/AI_2048](https://github.com/gksdusql94/AI_2048)
+- Visualization, control logic, and simulation enhancements by [Your Name]
 
-- PlayerAI_3.py: Implements AI logic with Expectiminimax and heuristics.
-- ComputerAI_3.py: Controls computer moves by inserting tiles randomly.
-- Grid_3.py: Handles all operations related to the game board (e.g., tile movement, merging).
-- Displayer_3.py: Manages grid display.
-- GameManager_3.py: Manages game flow, alternating between AI and computer turns.
-
-## 📊 Code Overview
-The AI explores all possible game moves using the Expectiminimax algorithm. Each state is evaluated using a weighted function to prioritize empty tiles, grid monotonicity, and corner positions for high-value tiles.
-
-```python
-def evaluate(grid):
-    # Return a weighted sum of the heuristic factors
-    return len(grid.getAvailableCells()) + monotonicity_score + corner_bonus
-```
-## Conclusion
-The 2048 Puzzle AI Player project showcases the power of algorithms like minimax and alpha-beta pruning in solving game challenges. With the provided structure, you can easily modify and improve the AI for better performance.
