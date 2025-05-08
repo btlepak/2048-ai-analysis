@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkFont
 import time
 import os
 import csv
@@ -12,8 +13,12 @@ class GameTrackerGUI:
     def __init__(self, master):
         self.master = master
         self.master.title("2048 Simulation Tracker")
+        self.master.rowconfigure(0, weight=1)
+        self.master.columnconfigure(0, weight=1)
 
-        # Stats and state
+        self.base_font = tkFont.Font(family="Helvetica", size=12)
+        self.tile_font = tkFont.Font(family="Helvetica", size=18)
+
         self.total_games = 0
         self.max_games = 10
         self.completed_games = 0
@@ -28,95 +33,104 @@ class GameTrackerGUI:
         self.MIN_SPEED = 1
         self.MAX_SPEED = 2000
 
-        # Logging setup deferred
         self.log_file = None
         self.csv_writer = None
 
-        # Grid and AIs
         self.grid = Grid()
         self.playerAI = PlayerAI()
         self.playerAI.weights = self.current_weights[:]
         self.computerAI = ComputerAI()
 
-        # UI setup
         self.setupUI()
         self.updateWeightInputs()
         self.toggleSimulationControls(active=False)
+        self.master.bind("<Configure>", self.on_resize)
 
     def setupUI(self):
+        for i in range(4):
+            self.master.rowconfigure(i, weight=1)
+            self.master.columnconfigure(i, weight=1)
+
         self.tile_labels = [[tk.Label(self.master, text='', width=5, height=2,
-                                      font=('Helvetica', 18), borderwidth=1, relief="solid")
+                                      font=self.tile_font, borderwidth=1, relief="solid")
                              for _ in range(4)] for _ in range(4)]
 
         for i in range(4):
             for j in range(4):
-                self.tile_labels[i][j].grid(row=i, column=j, padx=3, pady=3)
+                self.tile_labels[i][j].grid(row=i, column=j, padx=3, pady=3, sticky="nsew")
 
         self.info_frame = tk.Frame(self.master)
-        self.info_frame.grid(row=0, column=5, rowspan=9, padx=20)
+        self.info_frame.grid(row=0, column=5, rowspan=9, padx=20, sticky="nsew")
+        for i in range(20):
+            self.info_frame.rowconfigure(i, weight=1)
+        self.info_frame.columnconfigure(0, weight=1)
 
-        self.high_tile_label = tk.Label(self.info_frame, text="Current Game High Tile: 0", font=("Helvetica", 12))
-        self.high_tile_label.pack(pady=5)
+        self.high_tile_label = tk.Label(self.info_frame, text="Current Game High Tile: 0", font=self.base_font)
+        self.high_tile_label.grid(row=0, column=0, sticky="ew", pady=5)
 
-        self.best_tile_label = tk.Label(self.info_frame, text="All-Time Highest Tile: 0", font=("Helvetica", 12))
-        self.best_tile_label.pack(pady=5)
+        self.best_tile_label = tk.Label(self.info_frame, text="All-Time Highest Tile: 0", font=self.base_font)
+        self.best_tile_label.grid(row=1, column=0, sticky="ew", pady=5)
 
-        self.weights_label = tk.Label(self.info_frame, text="Heuristic Weights:", font=("Helvetica", 12))
-        self.weights_label.pack(pady=5)
+        self.weights_label = tk.Label(self.info_frame, text="Heuristic Weights:", font=self.base_font)
+        self.weights_label.grid(row=2, column=0, sticky="ew", pady=5)
 
         self.weight_entries = []
         for i in range(4):
-            entry = tk.Entry(self.info_frame, width=10, state='normal')
-            entry.pack(pady=2)
+            entry = tk.Entry(self.info_frame, width=10)
+            entry.grid(row=3+i, column=0, pady=2, sticky="ew")
             self.weight_entries.append(entry)
 
         self.status_frame = tk.Frame(self.info_frame)
-        self.status_frame.pack(pady=5)
-        self.status_waiting = tk.Label(self.status_frame, text="● Waiting", fg="gray")
-        self.status_waiting.grid(row=0, column=0, padx=5)
-        self.status_applied = tk.Label(self.status_frame, text="● Applied", fg="gray")
-        self.status_applied.grid(row=0, column=1, padx=5)
+        self.status_frame.grid(row=7, column=0, pady=5, sticky="ew")
+        self.status_frame.columnconfigure(0, weight=1)
+        self.status_frame.columnconfigure(1, weight=1)
 
-        self.change_weights_button = tk.Button(self.info_frame, text="Apply New Heuristics", command=self.applyWeightChanges)
-        self.change_weights_button.pack(pady=10)
+        self.status_waiting = tk.Label(self.status_frame, text="● Waiting", fg="gray", font=self.base_font)
+        self.status_waiting.grid(row=0, column=0, padx=5, sticky="ew")
 
-        self.game_count_label = tk.Label(self.info_frame, text="Games Completed: 0", font=("Helvetica", 12))
-        self.game_count_label.pack(pady=5)
+        self.status_applied = tk.Label(self.status_frame, text="● Applied", fg="gray", font=self.base_font)
+        self.status_applied.grid(row=0, column=1, padx=5, sticky="ew")
+
+        self.change_weights_button = tk.Button(self.info_frame, text="Apply New Heuristics", font=self.base_font,
+                                               command=self.applyWeightChanges)
+        self.change_weights_button.grid(row=8, column=0, pady=10, sticky="ew")
+
+        self.game_count_label = tk.Label(self.info_frame, text="Games Completed: 0", font=self.base_font)
+        self.game_count_label.grid(row=9, column=0, pady=5, sticky="ew")
 
         self.speed_control_frame = tk.Frame(self.info_frame)
-        self.speed_control_frame.pack(pady=5)
+        self.speed_control_frame.grid(row=10, column=0, pady=5, sticky="ew")
+        self.speed_control_frame.columnconfigure(1, weight=1)
 
-        self.decrease_button = tk.Button(self.speed_control_frame, text="-", command=self.decreaseSpeed, width=2)
+        self.decrease_button = tk.Button(self.speed_control_frame, text="-", font=self.base_font, command=self.decreaseSpeed, width=2)
         self.decrease_button.grid(row=0, column=0, padx=2)
 
         self.speed_slider = tk.Scale(self.speed_control_frame, from_=self.MIN_SPEED, to=self.MAX_SPEED,
                                      label="Speed (ms per move)", orient=tk.HORIZONTAL, command=self.adjustSpeed)
         self.speed_slider.set(self.speed)
-        self.speed_slider.grid(row=0, column=1)
+        self.speed_slider.grid(row=0, column=1, sticky="ew")
 
-        self.increase_button = tk.Button(self.speed_control_frame, text="+", command=self.increaseSpeed, width=2)
+        self.increase_button = tk.Button(self.speed_control_frame, text="+", font=self.base_font, command=self.increaseSpeed, width=2)
         self.increase_button.grid(row=0, column=2, padx=2)
 
+        tk.Label(self.info_frame, text="Total Games to Run:", font=self.base_font).grid(row=11, column=0, sticky="ew")
         self.max_games_entry = tk.Entry(self.info_frame)
         self.max_games_entry.insert(0, str(self.max_games))
-        tk.Label(self.info_frame, text="Total Games to Run:").pack()
-        self.max_games_entry.pack(pady=5)
+        self.max_games_entry.grid(row=12, column=0, pady=5, sticky="ew")
 
-        self.pause_button = tk.Button(self.info_frame, text="Pause", command=self.togglePause)
-        self.pause_button.pack(pady=10)
+        self.pause_button = tk.Button(self.info_frame, text="Pause", font=self.base_font, command=self.togglePause)
+        self.pause_button.grid(row=13, column=0, pady=10, sticky="ew")
 
-        self.start_button = tk.Button(self.info_frame, text="Start Full Simulation", command=self.startFullSimulation)
-        self.start_button.pack(pady=10)
+        self.start_button = tk.Button(self.info_frame, text="Start Full Simulation", font=self.base_font, command=self.startFullSimulation)
+        self.start_button.grid(row=14, column=0, pady=10, sticky="ew")
 
-        self.single_sim_button = tk.Button(self.info_frame, text="Start Single Simulation", command=self.startSingleSimulation)
-        self.single_sim_button.pack(pady=10)
+        self.single_sim_button = tk.Button(self.info_frame, text="Start Single Simulation", font=self.base_font, command=self.startSingleSimulation)
+        self.single_sim_button.grid(row=15, column=0, pady=10, sticky="ew")
 
-    def toggleSimulationControls(self, active):
-        state = 'normal' if active else 'disabled'
-        self.pause_button.config(state=state)
-        self.start_button.config(state='disabled' if active else 'normal')
-        self.single_sim_button.config(state='disabled' if active else 'normal')
-        self.max_games_entry.config(state='disabled' if active else 'normal')
+    def on_resize(self, event):
+        new_base = max(10, event.width // 60)
+        self.base_font.configure(size=new_base)
+        self.tile_font.configure(size=new_base + 6)
 
     def adjustSpeed(self, val):
         val = int(val)
@@ -168,7 +182,7 @@ class GameTrackerGUI:
 
     def initLogFile(self, directory):
         os.makedirs(directory, exist_ok=True)
-        date_str = datetime.now().strftime("%Y_%m_%d")
+        date_str = datetime.now().strftime("%Y_%m_%d_%I-%M-%S_%p")
         self.log_file_path = os.path.join(directory, f"results_{date_str}.csv")
         self.log_file = open(self.log_file_path, 'w', newline='')
         self.csv_writer = csv.writer(self.log_file)
@@ -204,6 +218,13 @@ class GameTrackerGUI:
         self.status_applied.config(fg="gray")
         self.initLogFile(os.path.join(os.getcwd(), "SingleSimulationResults"))
         self.newGame(use_current_weights=True)
+
+    def toggleSimulationControls(self, active):
+        state = 'normal' if active else 'disabled'
+        self.pause_button.config(state=state)
+        self.start_button.config(state='disabled' if active else 'normal')
+        self.single_sim_button.config(state='disabled' if active else 'normal')
+        self.max_games_entry.config(state='disabled' if active else 'normal')
 
     def updateUI(self):
         max_tile = 0
